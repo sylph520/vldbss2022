@@ -16,6 +16,14 @@ def replace_tokens(predicate):
 
 
 def predicates2seq(pre_tree, alias2table, relation_name, index_name):
+    """
+    INPUT:
+    pre_tree (list): tree like human readable description of the predicate
+    "= comparison at line: 1, col 15
+        Literal mk.keyword_id at line: 1, col 1
+        Literal k.id at line: 1, col 17"
+    OUTPUT: the predicate as a sequence
+    """
     current_level = -1
     current_line = 0
     sequence = []
@@ -29,11 +37,13 @@ def predicates2seq(pre_tree, alias2table, relation_name, index_name):
             for i in range(current_level - level + 1):
                 sequence.append(None)
         current_level = level
-        if operator_type == 'operator':
+        if operator_type == 'operator': # AND/OR
             sequence.append(Operator(operator))
             current_line += 1
         elif operator_type == 'comparison':
             operator = operator_seq[0]
+            # move next two lines and extract the left and right strings
+            # as values with alias resolved
             current_line += 1
             operator_str = pre_tree[current_line]
             operator_seq = operator_str.strip('\t').split(' ')

@@ -4,25 +4,30 @@ import pandas as pd
 
 
 def add_sample_bitmap(input_path, output_path, data, sample, sample_num):
+    """
+    add the sample bitmap feature channel to the scan operator's feature vectors
+    """
     with open(input_path, 'r') as ff:
         with open(output_path, 'w') as f:
             for count, plan in enumerate(ff.readlines()):
-                print (count)
+                # print (count)
                 parsed_plan = json.loads(plan)
                 nodes_with_sample = []
                 for node in parsed_plan['seq']:
                     bitmap_filter = []
                     bitmap_index = []
                     bitmap_other = []
-                    if node != None and 'condition' in node:
+                    if node != None and 'condition' in node: # nestedLoop, hash join
                         bitmap_other = get_preds_bitmap(node['condition'], data, sample, sample_num)
-                    if node != None and 'condition_filter' in node:
+                    if node != None and 'condition_filter' in node: # seq scan, 
                         bitmap_filter = get_preds_bitmap(node['condition_filter'], data, sample, sample_num)
-                    if node != None and 'condition_index' in node:
+                    if node != None and 'condition_index' in node: # seq scan
                         bitmap_index = get_preds_bitmap(node['condition_index'], data, sample, sample_num)
                     if len(bitmap_filter) > 0 or len(bitmap_index) > 0 or len(bitmap_other) > 0:
                         # YOUR CODE HERE: merge these bitmaps into a single bitmap.
                         # You can use the function bitand here.
+                        bits = [bitmap_other, bitmap_filter, bitmap_index]
+                        bitmap = [bitand(bits[i], bits[i+1]) for i in range(2) if len(bits[i+1]) != 0][-1]
                         node['bitmap'] = ''.join([str(x) for x in bitmap])
                     nodes_with_sample.append(node)
                 parsed_plan['seq'] = nodes_with_sample
@@ -42,12 +47,14 @@ def get_preds_bitmap(preds, data, sample, sample_num):
 def get_bitmap_from_predtree(root, data, sample, sample_num):
     predicate = root.get_item()
     if predicate is not None and predicate['op_type'] == 'Compare':
+        # comparison predicates
         table_name = predicate['left_value'].split('.')[0]
         column = predicate['left_value'].split('.')[1]
         vec = []
         pattern = re.compile(r'^[a-z_]+\.[a-z][a-z0-9_]*$')
         result = pattern.match(predicate['right_value'])
         if result is None:
+            # equi-constant predicates
             dtype = data[table_name].dtypes[column]
             for value in sample[table_name][column].tolist():
                 if isSelected(value, predicate, dtype):
@@ -57,6 +64,8 @@ def get_bitmap_from_predtree(root, data, sample, sample_num):
             for i in range(len(vec), sample_num):
                 vec.append(0)
         elif not predicate['right_value'].split('.')[0] in data:
+            # not join predicates, the right value may contains ., 
+            # e.g., annguilbert.com
             dtype = data[table_name].dtypes[column]
             for value in sample[table_name][column].tolist():
                 if isSelected(value, predicate, dtype):
@@ -65,15 +74,26 @@ def get_bitmap_from_predtree(root, data, sample, sample_num):
                     vec.append(0)
             for i in range(len(vec), sample_num):
                 vec.append(0)
+        else: #join predicates
+            # print("debug")
+            pass
         return vec
     elif predicate is not None and predicate['op_type'] == 'Bool':
         bitmap = []
         if predicate['operator'] == 'AND':
             # YOUR CODE HERE: get the bitmap for this AND operator.
             # You can use the function bitand here.
+            l_children, r_children = root.children
+            l_bitmap = get_bitmap_from_predtree(l_children, data, sample, sample_num)
+            r_bitmap = get_bitmap_from_predtree(r_children, data, sample, sample_num)
+            bitmap = bitand(l_bitmap, r_bitmap)
         elif predicate['operator'] == 'OR':
             # YOUR CODE HERE: get the bitmap for this OR operator.
             # You can use the function bitor here.
+            l_children, r_children = root.children
+            l_bitmap = get_bitmap_from_predtree(l_children, data, sample, sample_num)
+            r_bitmap = get_bitmap_from_predtree(r_children, data, sample, sample_num)
+            bitmap = bitor(l_bitmap, r_bitmap)
         else:
             print(predicate['operator'])
             raise

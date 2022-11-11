@@ -1,5 +1,5 @@
 import json
-
+import typing
 from feature_extraction.predicate_features import *
 
 
@@ -14,7 +14,19 @@ def change_alias2table(column, alias2table):
 
 
 # extract_feature_from_node extracts features from this node.
-def extract_feature_from_node(node, alias2table):
+def extract_feature_from_node(node, alias2table) -> typing.Tuple[any, any]:
+    """
+    node -> features of the following class type; join condition
+    Sort: sort_keys, None
+    Hash Join, Merge Join, Nest Loop: Join( ), None
+        hash_condition
+        merge condidtion
+        join filter
+    Aggregate: group_keys, None
+    Seq Scan, Index Scan: condition_seq_filter, condition_seq_index, 
+                relation_name, index_name
+
+    """
     relation_name, index_name = None, None
     if 'Relation Name' in node:
         relation_name = node['Relation Name']
@@ -23,7 +35,10 @@ def extract_feature_from_node(node, alias2table):
 
     if node['Node Type'] == 'Sort':
         # YOUR CODE HERE: extract features from this Sort node.
-
+        keys = []
+        if 'Sort Key' in node:
+            keys = [change_alias2table(key, alias2table) for key in node['Sort Key']]
+        return Sort(keys), None
     elif node['Node Type'] == 'Hash Join':
         return Join('Hash Join', pre2seq(node["Hash Cond"], alias2table, relation_name, index_name)), None
     elif node['Node Type'] == 'Hash':
@@ -43,7 +58,11 @@ def extract_feature_from_node(node, alias2table):
         return Aggregate(node['Strategy'], keys), None
     elif node['Node Type'] == 'Seq Scan':
         # YOUR CODE HERE: extract features from this Seq Scan node.
-
+        condition_seq_filter, condition_seq_index = [], []
+        if 'Filter' in node:
+            condition_seq_filter = pre2seq(node['Filter'], alias2table, relation_name, index_name)
+        relation_name = node['Relation Name']
+        return Scan('Seq Scan', condition_seq_filter, condition_seq_index, relation_name, index_name), None
     elif node['Node Type'] == 'Index Scan':
         condition_seq_filter, condition_seq_index = [], []
         if 'Filter' in node:

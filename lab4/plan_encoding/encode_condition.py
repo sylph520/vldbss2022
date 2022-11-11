@@ -53,7 +53,10 @@ def encode_condition_op(ctx: EncodeContext, condition_op, relation_name, index_n
             value_min = ctx.min_max_values[relation_name][column_name]['min']
             # YOUR CODE HERE: encode this condition "col op num_val"
             # calculate right_value_vec and operator_vec here
-
+            operator_idx = ctx.compare_ops_id[operator]
+            operator_vec = [0] * len(ctx.compare_ops_id)
+            operator_vec[operator_idx-1] = 1
+            right_value_vec = [1.0 * right_value/(value_max - value_min) if value_max != value_min else value_max]
         elif re.match(r'^__LIKE__', right_value) is not None:
             # col like str_var
             operator_idx = ctx.compare_ops_id['~~']

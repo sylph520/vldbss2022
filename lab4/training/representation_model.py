@@ -100,6 +100,10 @@ class Representation(nn.Module):
         for idx in reversed(range(0, num_level - 1)):
             # YOUR CODE HERE: select indexes of left/right children
             # calculate mapp_left/mapp_right from mapping.
+            # mapping shape num_layers x num_nodes_layer x 2
+            import numpy as np
+            mapp_left  = mapping[idx][:,0]
+            mapp_right = mapping[idx][:,1]
 
             pad = torch.zeros_like(hid)[:, 0].unsqueeze(1)
             next_hid = torch.cat((pad, hid), 1)

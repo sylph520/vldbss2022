@@ -41,8 +41,11 @@ def encode_job_plan_batch(ctx: EncodeContext, plans):
     samples_batch = []
     condition_masks_batch = []
     mapping_batch = []
-
+    # i = 1
     for plan in plans:
+        # # print(i)
+        # i = i + 1
+        
         target_cost = plan['cost']
         target_cardinality = plan['cardinality']
         target_cost_batch.append(target_cost)
@@ -157,6 +160,14 @@ def encode_job_plan_node(ctx: EncodeContext, node, condition_max_num):
             extra_info_vec[extra_info_inx - 1] = 1
             # YOUR CODE HERE: encode condition_filter to condition1_vec and condition_index to condition2_vec and bitmap
             # to sample_vec. You can use the function encode_conditions and encode_sample here.
+            condition1_vec = encode_conditions(ctx, conditions=node['condition_filter'],relation_name=relation_name, 
+                        index_name=index_name, condition_max_num=condition_max_num)
+            condition2_vec = encode_conditions(ctx, conditions=node['condition_index'],relation_name=relation_name,
+                        index_name=index_name, condition_max_num=condition_max_num)
+            if 'bitmap' in node:
+                sample_vec = encode_sample(node['bitmap'])
+            else:
+                pass
 
 
     return operator_vec, extra_info_vec, condition1_vec, condition2_vec, sample_vec, has_bitmap

@@ -17,12 +17,23 @@ def extract_feature():
     print('load imdb dataset')
     column2pos, indexes_id, tables_id, columns_id, physic_ops_id, compare_ops_id, bool_ops_id, table_names = prepare_imdb_dataset_for_extraction(dataset)
 
-    feature_extractor('./data/plans.json', './data/plans_seq.json')
+    seq_exist_flag = os.path.exists( './data/plans_seq.json')
+    if not seq_exist_flag:
+        feature_extractor('./data/plans.json', './data/plans_seq.json') # plans.json -> plan_seq.json
+    else:
+        # feature_extractor('./data/plans.json', './data/plans_seq.json') # for debug
+        pass
     print('extract plan features')
 
     sample_num = 1000
     sample = prepare_samples(dataset, sample_num, table_names)
-    add_sample_bitmap('./data/plans_seq.json', './data/plans_seq_sample.json', dataset, sample, sample_num)
+
+    sample_bitmap_flag = os.path.exists('./data/plans_seq_sample.json')
+    if not sample_bitmap_flag:
+        add_sample_bitmap('./data/plans_seq.json', './data/plans_seq_sample.json', dataset, sample, sample_num)
+    else:
+        # add_sample_bitmap('./data/plans_seq.json', './data/plans_seq_sample.json', dataset, sample, sample_num) # for debug
+        pass
     print('add sample bitmaps')
 
 
@@ -46,8 +57,12 @@ def encode_plan():
                         compare_ops_id, bool_ops_id, plan_node_max_num, condition_max_num, cost_label_min,
                         cost_label_max, card_label_min, card_label_max)
     out_dir = path.join('data', 'job')
-    os.makedirs(out_dir, exist_ok=True)
-    encode_and_save_job_plans(ctx, plans, batch_size=64, out_dir=out_dir)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+        encode_and_save_job_plans(ctx, plans, batch_size=64, out_dir=out_dir)
+    else:
+        # encode_and_save_job_plans(ctx, plans, batch_size=64, out_dir=out_dir) # for debug
+        pass
     print('data encoded')
 
 

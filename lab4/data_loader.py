@@ -7,6 +7,10 @@ import pandas as pd
 
 # load_imdb_dataset loads imdb datasets from CSV files in the specified directory.
 def load_imdb_dataset(dir_path):
+    """
+    read the csv data into a dict `data` with table name as key,
+    and imdb csv dataframe as value
+    """
     data = dict()
     data["aka_name"] = pd.read_csv(dir_path + '/aka_name.csv', header=None)
     data["aka_title"] = pd.read_csv(dir_path + '/aka_title.csv', header=None)
@@ -236,6 +240,7 @@ def prepare_imdb_dataset_for_extraction(database):
     for table_name in tables:
         column2pos[table_name] = database[table_name].columns
 
+	# predefined single column indexes
     indexes = ['aka_name_pkey', 'aka_title_pkey', 'cast_info_pkey', 'char_name_pkey',
                'comp_cast_type_pkey', 'company_name_pkey', 'company_type_pkey', 'complete_cast_pkey',
                'info_type_pkey', 'keyword_pkey', 'kind_type_pkey', 'link_type_pkey', 'movie_companies_pkey',
@@ -360,6 +365,11 @@ def load_numeric_min_max(file_path):
 
 
 def load_plans_and_obtain_bounds(file_path):
+    """
+    load plans from the file, and 1) update the upper and lower bound of 
+    (Logged) cost and cardinality in the loaded plans
+    2) the max number of plan nodes and condiditions
+    """
     plans = []
     plan_node_max_num = 0
     condition_max_num = 0
